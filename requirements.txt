@@ -1,0 +1,4 @@
+# This is an implicit value, here for clarity
+beautifulsoup4==4.5.1
+requests==2.11.1
+PyMySQL==0.7.9
