@@ -4,6 +4,7 @@ import pymysql.cursors
 from urllib import parse
 from bs4 import BeautifulSoup
 from utils import reg_tag, user_agents, headers
+from down_proxy import down_load_proxy
 
 url = 'https://book.douban.com/tag/'
 auth_reg = '^\([\u4E00-\u9FFF]+\)|\[[\u4E00-\u9FFF]+\]'
@@ -29,12 +30,6 @@ def get_douban_book_tag():
                 sql = 'INSERT INTO `douban_book_tag` (`tag_name`) VALUES (%s)'
                 cursor.execute(sql, (i))
         connection.commit()
-        # with connection.cursor() as cursor:
-        #     # Read a single record
-        #     sql = "SELECT `id`, `password` FROM `users` WHERE `email`=%s"
-        #     cursor.execute(sql, ('webmaster@python.org',))
-        #     result = cursor.fetchone()
-        #     print(result)
     finally:
         connection.close()
 
@@ -109,6 +104,8 @@ def get_all_book_tags():
         connection.close()
         return all_tags
 
+# proxy = down_load_proxy()
+
 
 def recycle_get_books():
     all_books = get_all_book_tags()
@@ -122,7 +119,5 @@ def recycle_get_books():
                 break
             get_douban_book_list(web_url)
             start_num += 20
-        return
-
 
 recycle_get_books()
