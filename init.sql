@@ -8,7 +8,7 @@ CREATE TABLE douban_book
   press       VARCHAR(32),
   data_str    VARCHAR(32),
   price       VARCHAR(16),
-  socre       FLOAT,
+  score       FLOAT,
   description TEXT,
   image       VARCHAR(128)
 );

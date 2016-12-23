@@ -79,7 +79,7 @@ def get_douban_book_list(tag_url):  # 解析单页
                 description =''
                 if BeautifulSoup(str(book), "html.parser").p is not None:
                     description=BeautifulSoup(str(book), "html.parser").p.string
-                sql = 'INSERT INTO `douban_book` (`name`,`author`,`county`,`translator`,`press`,`data_str`,`price`,`socre`,`description`,`image`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+                sql = 'INSERT INTO `douban_book` (`name`,`author`,`county`,`translator`,`press`,`data_str`,`price`,`score`,`description`,`image`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
                 cursor.execute(sql,
                                (name, author, county, translator, press, data_str, price, score, description, image))
 
