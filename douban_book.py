@@ -3,11 +3,13 @@ import requests, re
 import pymysql.cursors
 from urllib import parse
 from bs4 import BeautifulSoup
-from utils import reg_tag, user_agents, headers
+from utils import reg_tag, user_agents, headers,get_sql_info
 from down_proxy import down_load_proxy
+
 
 url = 'https://book.douban.com/tag/'
 auth_reg = '^\([\u4E00-\u9FFF]+\)|\[[\u4E00-\u9FFF]+\]'
+infos = get_sql_info()
 
 
 def get_douban_book_tag():
@@ -17,11 +19,11 @@ def get_douban_book_tag():
         href = t.get('href')
         if href is not None and reg_tag(href):
             tags.append(href.split('/tag/')[1])
-    connection = pymysql.connect(host='localhost',
-                                 user='douban',
-                                 password='douban',
-                                 db='douban',
-                                 charset='utf8mb4',
+    connection = pymysql.connect(host=infos['host'],
+                                 user=infos['user'],
+                                 password=infos['password'],
+                                 db=infos['database'],
+                                 charset=infos['charset'],
                                  cursorclass=pymysql.cursors.DictCursor)
     try:
         with connection.cursor() as cursor:
@@ -36,12 +38,12 @@ def get_douban_book_tag():
 
 def get_douban_book_list(tag_url):  # 解析单页
     tag_list = BeautifulSoup(requests.get(url=tag_url, headers=headers).text, "html.parser")
-    books = tag_list.find_all('li',class_="subject-item")
-    connection = pymysql.connect(host='localhost',
-                                 user='douban',
-                                 password='douban',
-                                 db='douban',
-                                 charset='utf8mb4',
+    books = tag_list.find_all('li', class_="subject-item")
+    connection = pymysql.connect(host=infos['host'],
+                                 user=infos['user'],
+                                 password=infos['password'],
+                                 db=infos['database'],
+                                 charset=infos['charset'],
                                  cursorclass=pymysql.cursors.DictCursor)
     try:
         with connection.cursor() as cursor:
@@ -67,13 +69,13 @@ def get_douban_book_list(tag_url):  # 解析单页
                 press = detail.split('/')[i]
                 data_str = detail.split('/')[i + 1]
                 price = re.sub(reg_price, '', detail.split('/')[i + 2])
-                print('aaaaa'+detail)
-                score =0
-                if len(BeautifulSoup(str(book), "html.parser").find_all(attrs={"class": "rating_nums"}))>0:
-                    score=BeautifulSoup(str(book), "html.parser").find_all(attrs={"class": "rating_nums"})[0].string
-                description =''
+                print('aaaaa' + detail)
+                score = 0
+                if len(BeautifulSoup(str(book), "html.parser").find_all(attrs={"class": "rating_nums"})) > 0:
+                    score = BeautifulSoup(str(book), "html.parser").find_all(attrs={"class": "rating_nums"})[0].string
+                description = ''
                 if BeautifulSoup(str(book), "html.parser").p is not None:
-                    description=BeautifulSoup(str(book), "html.parser").p.string
+                    description = BeautifulSoup(str(book), "html.parser").p.string
                 sql = 'INSERT INTO `douban_book` (`name`,`author`,`county`,`translator`,`press`,`data_str`,`price`,`score`,`description`,`image`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
                 cursor.execute(sql,
                                (name, author, county, translator, press, data_str, price, score, description, image))
@@ -86,11 +88,11 @@ def get_douban_book_list(tag_url):  # 解析单页
 
 def get_all_book_tags():
     all_tags = []  # 数据库读取所有的标签
-    connection = pymysql.connect(host='localhost',
-                                 user='douban',
-                                 password='douban',
-                                 db='douban',
-                                 charset='utf8mb4',
+    connection = pymysql.connect(host=infos['host'],
+                                 user=infos['user'],
+                                 password=infos['password'],
+                                 db=infos['database'],
+                                 charset=infos['charset'],
                                  cursorclass=pymysql.cursors.DictCursor)
     try:
         with connection.cursor() as cursor:
@@ -103,6 +105,7 @@ def get_all_book_tags():
     finally:
         connection.close()
         return all_tags
+
 
 # proxy = down_load_proxy()
 
@@ -119,5 +122,6 @@ def recycle_get_books():
                 break
             get_douban_book_list(web_url)
             start_num += 20
+
 
 recycle_get_books()

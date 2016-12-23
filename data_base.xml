@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<root>
+    <conn>
+        <host>localhost</host>
+        <user>douban</user>
+        <password>douban</password>
+        <database>douban</database>
+        <charset>utf8mb4</charset>
+    </conn>
+</root>

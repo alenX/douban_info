@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+from xml.etree import ElementTree as ET
 
 user_agents = [
     'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50',
@@ -26,3 +27,13 @@ def reg_tag(tag):
         return False
     else:
         return re.compile('^/tag/').match(tag)
+
+
+def get_sql_info():
+    per = ET.parse('data_base.xml')
+    p = per.findall('./conn')
+    info = {}
+    for data in p:  # 找出person节点
+        for child in data.getchildren():  # 找出person节点的子节点
+            info[child.tag] = child.text
+    return info

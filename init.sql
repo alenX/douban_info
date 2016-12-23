@@ -5,7 +5,7 @@ CREATE TABLE douban_book
   author      VARCHAR(128),
   county      VARCHAR(32),
   translator  VARCHAR(128),
-  press       VARCHAR(32),
+  press       VARCHAR(128),
   data_str    VARCHAR(32),
   price       VARCHAR(16),
   score       FLOAT,
