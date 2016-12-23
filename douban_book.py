@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import requests, re
 import pymysql.cursors
+import pymongo
 from urllib import parse
 from bs4 import BeautifulSoup
-from utils import reg_tag, user_agents, headers,get_sql_info
+from utils import reg_tag, user_agents, headers, get_sql_info
 from down_proxy import down_load_proxy
-
+from threading import Thread
 
 url = 'https://book.douban.com/tag/'
 auth_reg = '^\([\u4E00-\u9FFF]+\)|\[[\u4E00-\u9FFF]+\]'
@@ -29,7 +30,7 @@ def get_douban_book_tag():
         with connection.cursor() as cursor:
             # Create a new record
             for i in tags:
-                sql = 'INSERT INTO `douban_book_tag` (`tag_name`) VALUES (%s)'
+                sql = "INSERT INTO `douban_book_tag` (`tag_name`) VALUES (%s)"
                 cursor.execute(sql, (i))
         connection.commit()
     finally:
@@ -68,7 +69,7 @@ def get_douban_book_list(tag_url):  # 解析单页
                     translator = detail.split('/')[1]
                 press = detail.split('/')[i]
                 data_str = detail.split('/')[i + 1]
-                price = re.sub(reg_price, '', detail.split('/')[i + 2])
+                price = re.compile('\d+(.\d+)?').search(re.sub(reg_price, '', detail.split('/')[i + 2])).group(0)
                 print('aaaaa' + detail)
                 score = 0
                 if len(BeautifulSoup(str(book), "html.parser").find_all(attrs={"class": "rating_nums"})) > 0:
@@ -79,9 +80,7 @@ def get_douban_book_list(tag_url):  # 解析单页
                 sql = 'INSERT INTO `douban_book` (`name`,`author`,`county`,`translator`,`press`,`data_str`,`price`,`score`,`description`,`image`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
                 cursor.execute(sql,
                                (name, author, county, translator, press, data_str, price, score, description, image))
-
         connection.commit()
-
     finally:
         connection.close()
 
@@ -111,9 +110,23 @@ def get_all_book_tags():
 
 
 def recycle_get_books():
+    threads = []
     all_books = get_all_book_tags()
     for book_tag in all_books:
-        tag_url = url + parse.quote(book_tag)
+        t = Douban_Book_Thread(book_tag)
+        threads.append(t)
+        t.start()
+    for th in threads:
+        th.join()
+
+
+class Douban_Book_Thread(Thread):
+    def __init__(self, book_tag):
+        self.book_tag = book_tag
+        super(Douban_Book_Thread, self).__init__()
+
+    def run(self):
+        tag_url = url + parse.quote(self.book_tag)
         get_douban_book_list(tag_url)
         start_num = 20
         while True:
@@ -124,4 +137,5 @@ def recycle_get_books():
             start_num += 20
 
 
-recycle_get_books()
+if __name__ == '__main__':
+    recycle_get_books()
