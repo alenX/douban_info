@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import requests, re
+import requests, re, time, random
 import pymysql.cursors
 import pymongo
 from urllib import parse
@@ -37,8 +37,8 @@ def get_douban_book_tag():
         connection.close()
 
 
-def get_douban_book_list(tag_url):  # 解析单页
-    tag_list = BeautifulSoup(requests.get(url=tag_url, headers=headers).text, "html.parser")
+def get_douban_book_list(tag_url, proxies):  # 解析单页
+    tag_list = BeautifulSoup(requests.get(url=tag_url, headers=headers, proxies=proxies).text, "html.parser")
     books = tag_list.find_all('li', class_="subject-item")
     connection = pymysql.connect(host=infos['host'],
                                  user=infos['user'],
@@ -63,7 +63,7 @@ def get_douban_book_list(tag_url):  # 解析单页
                 translator = ''
                 if detail.count('/') != 4 and detail.count('/') != 3:
                     print(detail)
-                    break
+                    continue
                 if detail.count('/') > 3:  # 说明是外文书籍，有翻译人员
                     i += 1
                     translator = detail.split('/')[1]
@@ -109,33 +109,60 @@ def get_all_book_tags():
 # proxy = down_load_proxy()
 
 
-def recycle_get_books():
-    threads = []
-    all_books = get_all_book_tags()
-    for book_tag in all_books:
-        t = Douban_Book_Thread(book_tag)
-        threads.append(t)
-        t.start()
-    for th in threads:
-        th.join()
-
-
-class Douban_Book_Thread(Thread):
-    def __init__(self, book_tag):
-        self.book_tag = book_tag
-        super(Douban_Book_Thread, self).__init__()
-
-    def run(self):
-        tag_url = url + parse.quote(self.book_tag)
-        get_douban_book_list(tag_url)
-        start_num = 20
-        while True:
-            web_url = tag_url + "?start=" + str(start_num) + "&type=T"
-            if str(BeautifulSoup(requests.get(web_url).text, "html.parser")).count('没有找到符合条件的图书') > 0:
-                break
-            get_douban_book_list(web_url)
-            start_num += 20
+# def recycle_get_books():
+#     threads = []
+#     all_books = get_all_book_tags()
+#     for book_tag in all_books:
+#         t = Douban_Book_Thread(book_tag)
+#         threads.append(t)
+#         t.start()
+#     for th in threads:
+#         th.join()
+#
+#
+# class Douban_Book_Thread(Thread):
+#     def __init__(self, book_tag):
+#         self.book_tag = book_tag
+#         super(Douban_Book_Thread, self).__init__()
+#
+#     def run(self):
+#         tag_url = url + parse.quote(self.book_tag)
+#         get_douban_book_list(tag_url)
+#         start_num = 20
+#         while True:
+#             web_url = tag_url + "?start=" + str(start_num) + "&type=T"
+#             if str(BeautifulSoup(requests.get(web_url).text, "html.parser")).count('没有找到符合条件的图书') > 0:
+#                 break
+#             get_douban_book_list(web_url)
+#             start_num += 20
 
 
 if __name__ == '__main__':
-    recycle_get_books()
+    pp = down_load_proxy()
+    all_books = get_all_book_tags()
+    for book_tag in all_books:
+        tag_url = url + parse.quote(book_tag)
+        num_index = random.randint(0, len(pp) - 1)
+        proxies = {pp[num_index].split('=')[0]: pp[num_index].split('=')[1]}
+        get_douban_book_list(tag_url, proxies)
+        start_num = 20
+        err_times = 0
+        time.sleep(2)
+        while True:
+            web_url = tag_url + "?start=" + str(start_num) + "&type=T"
+            try:
+                num_index = random.randint(0, len(pp) - 1)
+                proxies = {pp[num_index].split('=')[0]: pp[num_index].split('=')[1]}
+                s = requests.get(url=web_url, headers=headers, proxies=proxies)
+                print('代理===' + str(proxies))
+                if s.status_code == 200:
+                    if str(BeautifulSoup(s.text, "html.parser")).count('没有找到符合条件的图书') > 0:
+                        print('最后页==='+web_url)
+                        break
+                    get_douban_book_list(web_url, proxies)
+                start_num += 20
+            except Exception as e:
+                print(repr(e))
+                err_times += 1
+            if err_times > 3:
+                start_num += 20
